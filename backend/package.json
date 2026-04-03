@@ -4,7 +4,11 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "dev": "nodemon index.js"
+    "dev": "nodemon index.js",
+    "migrate:create": "node-pg-migrate create",
+    "migrate:up": "node-pg-migrate up",
+    "migrate:down": "node-pg-migrate down",
+    "seed": "node scripts/seed.js"
   },
   "keywords": [],
   "author": "",
@@ -14,7 +18,9 @@
     "cors": "^2.8.6",
     "dotenv": "^17.4.0",
     "express": "^5.2.1",
+    "joi": "^18.1.2",
     "jsonwebtoken": "^9.0.3",
+    "node-pg-migrate": "^8.0.4",
     "pg": "^8.20.0"
   },
   "devDependencies": {

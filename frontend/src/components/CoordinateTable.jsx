@@ -3,7 +3,7 @@ import React from 'react';
 export default function CoordinateTable({ markers, onDeleteMarker }) {
   return (
     <div style={{ marginTop: '20px', backgroundColor: 'white', padding: '15px', borderRadius: '8px', boxShadow: '0 2px 4px rgba(0,0,0,0.1)' }}>
-      <h3 style={{ marginTop: 0 }}>Data Koordinat Marker</h3>
+      <h3 style={{ marginTop: 0 }}>Data Titik Lokasi</h3>
       <table style={{ width: '100%', borderCollapse: 'collapse' }}>
         <thead>
           <tr style={{ backgroundColor: '#f2f2f2' }}>
@@ -22,8 +22,8 @@ export default function CoordinateTable({ markers, onDeleteMarker }) {
             markers.map((marker, index) => (
               <tr key={marker.id}>
                 <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{index + 1}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{marker.lat.toFixed(6)}</td>
-                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{marker.lng.toFixed(6)}</td>
+                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{marker.latitude.toFixed(6)}</td>
+                <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>{marker.longitude.toFixed(6)}</td>
                 <td style={{ border: '1px solid #ddd', padding: '8px', textAlign: 'center' }}>
                   <button 
                     onClick={() => onDeleteMarker(marker.id)}
