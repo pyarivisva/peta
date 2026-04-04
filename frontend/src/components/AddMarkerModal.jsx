@@ -1,86 +1,153 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import api from '../api/axiosConfig';
+import Loading from './Loading';
 
-export default function AddMarkerModal({ isOpen, onClose, onSubmit, lat, lng, types }) {
+export default function AddMarkerModal({ isOpen, onClose, onSuccess, coords }) {
   const [name, setName] = useState('');
   const [typeId, setTypeId] = useState('');
+  const [description, setDescription] = useState('');
+  const [address, setAddress] = useState('');
+  const [types, setTypes] = useState([]);
+  const [isLoading, setIsLoading] = useState(false);
+  const [isFetchingTypes, setIsFetchingTypes] = useState(true);
 
-  // Jika modal tidak disuruh buka, jangan tampilkan apa-apa
-  if (!isOpen) return null;
+  // Ambil daftar kategori dari backend saat modal dibuka
+  useEffect(() => {
+    if (isOpen) {
+      const fetchTypes = async () => {
+        setIsFetchingTypes(true);
+        try {
+          const res = await api.get('/types');
+          setTypes(res.data);
+        } catch (error) {
+          console.error("Gagal mengambil data kategori:", error);
+        } finally {
+          setIsFetchingTypes(false);
+        }
+      };
+      fetchTypes();
+    }
+  }, [isOpen]);
 
-  const handleSubmit = (e) => {
+  if (!isOpen || !coords) return null;
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!name || !typeId) {
-      alert("Mohon isi semua data!");
+      alert("Nama dan Kategori wajib diisi!");
       return;
     }
-    // Kirim data ke fungsi handleAddMarker di MapPage
-    onSubmit(name, typeId, lat, lng);
-    
-    // Reset form setelah kirim
-    setName('');
-    setTypeId('');
+
+    setIsLoading(true);
+    try {
+      await api.post('/objects', {
+        name,
+        type_id: parseInt(typeId),
+        latitude: coords.lat,
+        longitude: coords.lng,
+        description,
+        address
+      });
+      
+      setName('');
+      setTypeId('');
+      setDescription('');
+      setAddress('');
+      
+      onSuccess();
+    } catch (error) {
+      console.error(error);
+      alert(error.response?.data?.message || "Terjadi kesalahan saat menyimpan lokasi.");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
-    <div style={{ 
-      position: 'fixed', top: 0, left: 0, width: '100vw', height: '100vh', 
-      backgroundColor: 'rgba(0,0,0,0.6)', display: 'flex', 
-      justifyContent: 'center', alignItems: 'center', zIndex: 9999,
-      backdropFilter: 'blur(2px)'
-    }}>
-      <div style={{ 
-        backgroundColor: 'white', padding: '30px', borderRadius: '16px', 
-        width: '100%', maxWidth: '400px', boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
-        position: 'relative'
-      }}>
-        <h3 style={{ marginTop: 0, marginBottom: '10px', color: '#1a1a1a' }}>Tambah Titik Baru</h3>
-        <p style={{ fontSize: '13px', color: '#666', marginBottom: '20px', backgroundColor: '#f5f5f5', padding: '8px', borderRadius: '6px' }}>
-          📍 Koordinat: <span style={{ fontWeight: 'bold' }}>{lat?.toFixed(6)}, {lng?.toFixed(6)}</span>
-        </p>
+    <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex justify-center items-center z-[9999] px-4">
+      
+      {isLoading && <Loading fullScreen={true} />}
+
+      <div className="bg-white p-6 rounded-2xl w-full max-w-md shadow-2xl relative">
+        <h3 className="text-xl font-bold text-gray-800 mb-2">Tambah Titik Baru</h3>
         
-        <form onSubmit={handleSubmit}>
-          <div style={{ marginBottom: '15px' }}>
-            <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px', fontWeight: 'bold', color: '#333' }}>
-              Nama Lokasi / Objek
-            </label>
+        <div className="text-sm text-gray-600 bg-gray-100 p-3 rounded-lg mb-5 flex items-center gap-2">
+          <span>📍</span>
+          <span>
+            Koordinat: <strong className="text-blue-600">{coords.lat.toFixed(6)}, {coords.lng.toFixed(6)}</strong>
+          </span>
+        </div>
+        
+        <form onSubmit={handleSubmit} className="space-y-4">
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Nama Lokasi / Objek <span className="text-red-500">*</span></label>
             <input 
               type="text" 
               value={name} 
               onChange={e => setName(e.target.value)} 
               required 
-              placeholder="Masukkan nama tempat..." 
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', boxSizing: 'border-box', fontSize: '15px' }} 
+              placeholder="Contoh: Pantai Kuta" 
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none" 
             />
           </div>
 
-          <div style={{ marginBottom: '25px' }}>
-            <label style={{ display: 'block', fontSize: '14px', marginBottom: '8px', fontWeight: 'bold', color: '#333' }}>
-              Kategori
-            </label>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Kategori <span className="text-red-500">*</span></label>
             <select 
               value={typeId} 
               onChange={e => setTypeId(e.target.value)} 
               required 
-              style={{ width: '100%', padding: '12px', borderRadius: '8px', border: '1px solid #ddd', boxSizing: 'border-box', fontSize: '15px', backgroundColor: 'white' }}
+              disabled={isFetchingTypes}
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none bg-white disabled:bg-gray-100"
             >
-              <option value="" disabled>-- Pilih Kategori --</option>
-              {types.map(t => (
-                <option key={t.id} value={t.id}>{t.name}</option>
-              ))}
+              {isFetchingTypes ? (
+                <option value="">Memuat kategori...</option>
+              ) : (
+                <>
+                  <option value="" disabled>-- Pilih Kategori --</option>
+                  {types.map(t => (
+                    <option key={t.id} value={t.id}>{t.name}</option>
+                  ))}
+                </>
+              )}
             </select>
           </div>
 
-          <div style={{ display: 'flex', gap: '12px', justifyContent: 'flex-end' }}>
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Alamat Singkat</label>
+            <input 
+              type="text" 
+              value={address} 
+              onChange={e => setAddress(e.target.value)} 
+              placeholder="Contoh: Jl. Pantai Kuta, Badung" 
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none" 
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-bold text-gray-700 mb-1">Deskripsi</label>
+            <textarea 
+              value={description} 
+              onChange={e => setDescription(e.target.value)} 
+              placeholder="Tambahkan detail informasi tempat ini..." 
+              rows="2"
+              className="w-full px-4 py-2 rounded-lg border border-gray-300 focus:ring-2 focus:ring-blue-500 outline-none resize-none" 
+            ></textarea>
+          </div>
+
+          <div className="flex gap-3 justify-end pt-4 mt-2 border-t">
             <button 
               type="button" 
-              onClick={onClose} 
-              style={{ padding: '10px 20px', border: 'none', background: '#f0f0f0', color: '#555', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+              onClick={onClose}
+              disabled={isLoading}
+              className="px-5 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-bold transition-colors disabled:opacity-50"
             >
               Batal
             </button>
             <button 
               type="submit" 
-              style={{ padding: '10px 20px', border: 'none', background: '#1890ff', color: 'white', borderRadius: '8px', cursor: 'pointer', fontWeight: 'bold' }}
+              disabled={isLoading || isFetchingTypes}
+              className="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors disabled:opacity-50"
             >
               Simpan Lokasi
             </button>

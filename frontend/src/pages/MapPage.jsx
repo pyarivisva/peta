@@ -1,133 +1,180 @@
-import { useState, useEffect, useCallback } from 'react';
-import axios from 'axios';
+import { useState, useEffect, useCallback, useContext, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../api/axiosConfig'; 
 import InteractiveMap from '../components/InteractiveMap';
-import CoordinateTable from '../components/CoordinateTable';
-import AddMarkerModal from '../components/AddMarkerModal';
-import FeedbackModal from '../components/FeedbackModal';
+import InfoPanel from '../components/InfoPanel'; 
+import NavRail from '../components/NavRail'; 
+import Navbar from '../components/Navbar';
+import SavedPanel from '../components/SavedPanel';
+import HistoryPanel from '../components/HistoryPanel';
+import { useLocalStorage } from '../hooks/useLocalStorage';
+import SettingsPanel from '../components/SettingsPanel';
+import { ThemeContext } from '../context/ThemeContext';
 
-const API_URL = 'http://localhost:3000/api';
-
-export default function MapPage({ token, isAdmin }) {
+export default function MapPage({ isAdmin = false }) {
   const [markers, setMarkers] = useState([]);
-  const [types, setTypes] = useState([]);
+  const [filteredMarkers, setFilteredMarkers] = useState([]);
+  const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalCoords, setModalCoords] = useState({ lat: null, lng: null });
+  // State untuk Detail Lokasi
+  const [selectedLocation, setSelectedLocation] = useState(null);
+  const [isPanelOpen, setIsPanelOpen] = useState(false);
+  
+  // State untuk Navigasi Kiri
+  const [isRailExpanded, setIsRailExpanded] = useState(false); 
 
-  const [feedback, setFeedback] = useState({ isOpen: false, isConfirm: false, title: '', message: '', onConfirmAction: null });
+  const [activeSidePanel, setActiveSidePanel] = useState(null);
+  const [savedIds, setSavedIds] = useLocalStorage('bali_gis_saved', []);
+  const [historyIds, setHistoryIds] = useLocalStorage('bali_gis_history', []);  
+  
+  const mapRef = useRef(null);
+  const navigate = useNavigate();
+  const { activeTheme, setActiveTheme } = useContext(ThemeContext);
 
-  const fetchMarkers = useCallback(async () => {
+  // 1. Load Data Awal
+  const fetchData = useCallback(async () => {
     try {
-      const res = await axios.get(`${API_URL}/public/objects`);
+      const res = await api.get('/public/objects');
       setMarkers(res.data);
-    } catch (err) { console.error('Error load markers:', err); }
+      setFilteredMarkers(res.data);
+    } catch (err) { console.error(err); }
   }, []);
 
-  const fetchTypes = useCallback(async () => {
-    try {
-      const res = await axios.get(`${API_URL}/types`);
-      setTypes(res.data);
-    } catch (err) { console.error('Error load types:', err); }
-  }, []);
+  useEffect(() => { fetchData(); }, [fetchData]);
 
-  // FIX ESLint Error: Membungkus dalam async function
+  // 2. Fungsi Seleksi (Dipakai saat klik marker atau pilih hasil search)
+  const handleSelectLocation = (location) => {
+    setSelectedLocation(location);
+    setIsPanelOpen(true);
+    setActiveSidePanel(null);
+    addToHistory(location.id);
+    // Geser peta ke lokasi tersebut
+    if (mapRef.current && location.latitude && location.longitude) {
+        mapRef.current.flyTo([location.latitude, location.longitude], 15);
+    }
+  };
+
+  // 3. Fungsi Search (Hanya memfilter data, tidak otomatis buka panel detail)
+  const handleSearch = (query) => {
+    const filtered = markers.filter(m => 
+      m.name.toLowerCase().includes(query.toLowerCase())
+    );
+    setFilteredMarkers(filtered);
+  };
+
+  const handleSelectCategory = (category) => {
+    const filtered = category === 'Semua' 
+      ? markers 
+      : markers.filter(m => m.type_name === category);
+    setFilteredMarkers(filtered);
+  };
+
+  const addToHistory = (id) => {
+    setHistoryIds((prev) => {
+      const filtered = prev.filter(item => item !== id); // Hapus jika sudah ada (biar tidak duplikat)
+      return [id, ...filtered].slice(0, 10); // Tambah ke paling atas, batasi 10 item
+    });
+  };
+
+  // Fungsi untuk toggle simpan (Like/Unlike)
+  const toggleSave = (id) => {
+    setSavedIds((prev) => 
+      prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]
+    );
+  };
+
+  // Invalidate peta agar ukurannya pas saat UI berubah
   useEffect(() => {
-    const loadInitialData = async () => {
-      await fetchMarkers();
-      await fetchTypes();
-    };
-    loadInitialData();
-  }, [fetchMarkers, fetchTypes]);
-
-  const showAlert = (title, message) => {
-    setFeedback({ isOpen: true, isConfirm: false, title, message, onConfirmAction: null });
-  };
-
-  const showConfirm = (title, message, action) => {
-    setFeedback({ isOpen: true, isConfirm: true, title, message, onConfirmAction: () => action() });
-  };
-
-  const handleMapClick = (lat, lng) => {
-    if (isAdmin) {
-      setModalCoords({ lat, lng });
-      setIsModalOpen(true);
-    } else {
-      showAlert("Akses Ditolak", "Mode Publik aktif. Silakan login sebagai Admin untuk menandai lokasi baru di peta.");
+    if (mapRef.current) {
+      setTimeout(() => mapRef.current.invalidateSize(), 300);
     }
-  };
-
-  const handleAddMarker = async (name, typeId, lat, lng) => {
-    try {
-      await axios.post(`${API_URL}/objects`, 
-        { name, latitude: lat, longitude: lng, type_id: parseInt(typeId) },
-        { headers: { Authorization: `Bearer ${token}` } }
-      );
-      fetchMarkers();
-      setIsModalOpen(false);
-    } catch (err) {
-      console.error(err); // FIX ESLint Error: err digunakan
-      showAlert("Gagal", "Tidak dapat menyimpan data lokasi. Periksa koneksi ke server.");
-    }
-  };
-
-  const executeDelete = async (id) => {
-    try {
-      await axios.delete(`${API_URL}/objects/${id}`, {
-        headers: { Authorization: `Bearer ${token}` }
-      });
-      fetchMarkers();
-    } catch (err) { 
-      console.error(err); // FIX ESLint Error: err digunakan
-      showAlert("Gagal", "Terjadi kesalahan saat menghapus data."); 
-    }
-  };
-
-  const handleDeleteRequest = (id) => {
-    if (!isAdmin) return;
-    showConfirm("Hapus Lokasi", "Tindakan ini tidak dapat dibatalkan. Yakin ingin menghapus titik lokasi ini?", () => executeDelete(id));
-  };
+  }, [isPanelOpen, isRailExpanded]);
 
   return (
-    <div style={{ maxWidth: '1100px', margin: '0 auto' }}>
+  <div style={{ position: 'relative', width: '100vw', height: '100vh', overflow: 'hidden' }}>
+    
+    {/* LAYER PALING ATAS: MODAL SETTINGS */}
+    <SettingsPanel 
+      isOpen={isSettingsPanelOpen} 
+      onClose={() => setIsSettingsPanelOpen(false)} 
+      activeTheme={activeTheme}
+      setActiveTheme={setActiveTheme}
+    />
+
+    <SavedPanel 
+        isOpen={activeSidePanel === 'saved'}
+        onClose={() => setActiveSidePanel(null)}
+        savedIds={savedIds}
+        allMarkers={markers}
+        onSelectLocation={handleSelectLocation}
+        // Atur posisi left agar tidak tertutup Rail
+        style={{ left: isRailExpanded ? '280px' : '84px' }} 
+      />
+
+      <HistoryPanel 
+        isOpen={activeSidePanel === 'history'}
+        onClose={() => setActiveSidePanel(null)}
+        historyIds={historyIds}
+        allMarkers={markers}
+        onSelectLocation={handleSelectLocation}
+        style={{ left: isRailExpanded ? '280px' : '84px' }}
+      />
       
-      <FeedbackModal 
-        isOpen={feedback.isOpen}
-        isConfirm={feedback.isConfirm}
-        title={feedback.title}
-        message={feedback.message}
-        onClose={() => setFeedback({ ...feedback, isOpen: false })}
-        onConfirm={feedback.onConfirmAction}
-      />
-
-      <AddMarkerModal 
-        isOpen={isModalOpen} 
-        onClose={() => setIsModalOpen(false)} 
-        onSubmit={handleAddMarker}
-        lat={modalCoords.lat}
-        lng={modalCoords.lng}
-        types={types}
-      />
-
-      <div style={{ backgroundColor: 'white', padding: '25px', borderRadius: '16px', boxShadow: '0 4px 20px rgba(0,0,0,0.05)' }}>
-        {isAdmin && (
-          <div style={{ marginBottom: '20px', padding: '12px 18px', backgroundColor: '#e6f7ff', border: '1px solid #91d5ff', borderRadius: '8px', color: '#0050b3', display: 'flex', alignItems: 'center', gap: '10px' }}>
-            <span>📍</span> <strong>Mode Admin:</strong> Klik pada peta untuk menandai objek baru secara presisi.
-          </div>
-        )}
-        
-        <InteractiveMap 
-          markers={markers} 
-          onAddMarker={handleMapClick} 
-          onDeleteMarker={handleDeleteRequest}
-          isAdmin={isAdmin} 
-        />
-      </div>
-
-      <CoordinateTable 
-        markers={markers} 
-        onDeleteMarker={handleDeleteRequest}
-        isAdmin={isAdmin} 
+    {/* LAYER 1: NAV RAIL (Z-index 1100) */}
+    <div style={{ position: 'absolute', left: 0, top: 0, zIndex: 1100 }}>
+      <NavRail 
+        isExpanded={isRailExpanded}
+        onToggleExpand={() => setIsRailExpanded(!isRailExpanded)} 
+        onSettingsClick={() => setIsSettingsPanelOpen(true)}
+        onSavedClick={() => { setActiveSidePanel('saved'); setIsPanelOpen(false); }}
+        onHistoryClick={() => { setActiveSidePanel('history'); setIsPanelOpen(false); }}
       />
     </div>
-  );
+
+    {/* LAYER 2: INFO PANEL (Z-index 1050) */}
+    <div style={{ 
+      position: 'absolute', 
+      top: '80px', 
+      left: isPanelOpen ? (isRailExpanded ? '280px' : '84px') : '-410px', 
+      zIndex: 1050, 
+      width: '390px',
+      height: 'calc(100vh - 90px)', 
+      backgroundColor: 'white',
+      borderRadius: '12px 12px 0 0',
+      boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+      transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+      overflow: 'hidden'
+    }}>
+      <InfoPanel 
+        location={selectedLocation} 
+        isOpen={isPanelOpen} 
+        onBack={() => setIsPanelOpen(false)} 
+        onSave={() => toggleSave(selectedLocation.id)}
+        isSaved={savedIds.includes(selectedLocation?.id)}
+      />
+    </div>
+
+    {/* LAYER 3: AREA MAP & NAVBAR (Z-index default/rendah) */}
+    <div style={{ width: '100%', height: '100%', position: 'relative', zIndex: 1 }}>
+      <Navbar 
+        onSearch={handleSearch}
+        results={filteredMarkers}
+        onSelectResult={handleSelectLocation}
+        categories={['Semua', ...new Set(markers.map(m => m.type_name))]}
+        onSelectCategory={handleSelectCategory}
+        isRailExpanded={isRailExpanded}
+        onLoginClick={() => navigate('/login')}
+      />
+
+      <InteractiveMap 
+        markers={filteredMarkers} 
+        isAdmin={isAdmin} 
+        setMapRef={(map) => mapRef.current = map} 
+        onDetailClick={handleSelectLocation}
+        theme={activeTheme}
+        setActiveTheme={setActiveTheme}
+      />
+    </div>
+  </div>
+);
 }
