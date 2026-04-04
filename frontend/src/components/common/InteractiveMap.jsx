@@ -5,16 +5,29 @@ import 'leaflet/dist/leaflet.css';
 import { DEFAULT_CENTER } from '../../constants/mapConfig';
 import { ThemeContext } from '../../context/ThemeContext';
 
-const MapEvents = ({ onMapClick, isAdmin }) => {
-  useMapEvents({
-    click(e) { 
-      if (isAdmin && onMapClick) onMapClick(e.latlng.lat, e.latlng.lng); 
-    }
+function MapEvents({ onMapClick, isAdmin }) {
+  const map = useMapEvents({
+    click: (e) => {
+      if (isAdmin && onMapClick) {
+        const { lat, lng } = e.latlng;
+        onMapClick(lat, lng);
+      }
+    },
   });
-  return null;
-};
 
-export default function InteractiveMap({ markers, onAddMarker, isAdmin, setMapRef, onDetailClick }) {
+  useEffect(() => {
+    const container = map.getContainer();
+    if (isAdmin) {
+      container.classList.add('admin-map-mode');
+    } else {
+      container.classList.remove('admin-map-mode');
+    }
+  }, [isAdmin, map]);
+
+  return null;
+}
+
+export default function InteractiveMap({ markers, onMapClick, isAdmin, setMapRef, onDetailClick }) {
   // Ambil config tema dari context
   const { themeData } = useContext(ThemeContext);
   
@@ -60,7 +73,7 @@ export default function InteractiveMap({ markers, onAddMarker, isAdmin, setMapRe
       <ZoomControl position="bottomright" />
       
       <MapInstanceCapture />
-      <MapEvents onMapClick={onAddMarker} isAdmin={isAdmin} />
+      <MapEvents onMapClick={onMapClick} isAdmin={isAdmin} />
 
       {markers.map(m => (
         <Marker 

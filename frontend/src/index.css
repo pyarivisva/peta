@@ -7,6 +7,16 @@ body {
   background-color: #f9f9f9;
 }
 
+/* Saat isAdmin true, kita akan tambahkan class custom ke container peta */
+.admin-map-mode {
+  cursor: crosshair !important;
+}
+
+/* Pastikan semua elemen interaktif di dalam peta mengikuti kursor ini */
+.admin-map-mode .leaflet-interactive {
+  cursor: crosshair !important;
+}
+
 .leaflet-container {
   width: 100%;
   height: 100%;

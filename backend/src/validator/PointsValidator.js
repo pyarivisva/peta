@@ -9,7 +9,8 @@ const PointsValidator = {
       latitude: Joi.number().required(),
       longitude: Joi.number().required(),
       type_id: Joi.number().integer().required(),
-      tags: Joi.array().items(Joi.string()),
+      // tags: Joi.array().items(Joi.string()),
+      tags: Joi.array().items(Joi.string()).default([])
     });
 
     return schema.validate(payload);

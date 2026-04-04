@@ -10,10 +10,13 @@ export default function ObjectFormModal({ isOpen, onClose, onSubmit, mode, data,
     type_id: '',
     phone: '',
     status: 'Open',
-    image_url: ''
   });
 
-  // Sinkronisasi data saat modal dibuka (untuk Edit atau Klik Peta)
+  // 1. Tambahkan state untuk menampung file fisik
+  const [imageFile, setImageFile] = useState(null);
+  // State untuk preview gambar agar user bisa melihat apa yang dia pilih
+  const [previewUrl, setPreviewUrl] = useState(null);
+
   useEffect(() => {
     if (data) {
       setFormData({
@@ -25,41 +28,67 @@ export default function ObjectFormModal({ isOpen, onClose, onSubmit, mode, data,
         type_id: data.type_id || '',
         phone: data.phone || '',
         status: data.status || 'Open',
-        image_url: data.image_url || ''
       });
+      // Jika edit, tampilkan gambar lama sebagai preview jika ada
+      setPreviewUrl(data.image_url || null);
     } else {
-      // Reset jika Create murni
       setFormData({
         name: '', description: '', address: '', latitude: '', 
-        longitude: '', type_id: '', phone: '', status: 'Open', image_url: ''
+        longitude: '', type_id: '', phone: '', status: 'Open'
       });
+      setPreviewUrl(null);
+      setImageFile(null);
     }
   }, [data, isOpen]);
 
+  // 2. Fungsi untuk menangani perubahan file
+  const handleFileChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImageFile(file);
+      // Membuat URL sementara untuk menampilkan gambar di UI
+      setPreviewUrl(URL.createObjectURL(file));
+    }
+  };
+
   if (!isOpen) return null;
 
+  // 3. Modifikasi handleSubmit untuk menggunakan FormData
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSubmit(formData);
+    
+    const dataToSend = new FormData();
+    dataToSend.append('name', formData.name);
+    dataToSend.append('type_id', formData.type_id);
+    dataToSend.append('latitude', formData.latitude);
+    dataToSend.append('longitude', formData.longitude);
+    dataToSend.append('description', formData.description);
+    dataToSend.append('address', formData.address);
+    dataToSend.append('phone', formData.phone);
+    dataToSend.append('status', formData.status);
+    
+    // Kirim file hanya jika ada file yang dipilih
+    if (imageFile) {
+      dataToSend.append('image', imageFile);
+    }
+
+    onSubmit(dataToSend);
   };
 
   return (
     <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white w-full max-w-2xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[90vh]">
         
-        {/* Header */}
         <div className="p-6 border-b flex justify-between items-center bg-slate-50">
           <h2 className="text-xl font-bold text-slate-800">
-            {mode === 'create' ? 'Tambah Lokasi Baru 📍' : 'Edit Lokasi 📝'}
+            {mode === 'create' ? 'Tambah Lokasi Baru' : 'Edit Lokasi'}
           </h2>
           <button onClick={onClose} className="text-slate-400 hover:text-slate-600 text-2xl">✕</button>
         </div>
 
-        {/* Form Body */}
         <form onSubmit={handleSubmit} className="p-8 overflow-y-auto space-y-6">
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Nama & Tipe */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Nama Lokasi</label>
               <input 
@@ -67,7 +96,6 @@ export default function ObjectFormModal({ isOpen, onClose, onSubmit, mode, data,
                 value={formData.name}
                 onChange={(e) => setFormData({...formData, name: e.target.value})}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none transition-all"
-                placeholder="Contoh: Pura Uluwatu"
               />
             </div>
 
@@ -86,7 +114,6 @@ export default function ObjectFormModal({ isOpen, onClose, onSubmit, mode, data,
               </select>
             </div>
 
-            {/* Koordinat (Readonly jika dari Klik Peta) */}
             <div className="space-y-1">
               <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Latitude</label>
               <input 
@@ -108,7 +135,6 @@ export default function ObjectFormModal({ isOpen, onClose, onSubmit, mode, data,
             </div>
           </div>
 
-          {/* Alamat & Deskripsi */}
           <div className="space-y-1">
             <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Alamat Lengkap</label>
             <textarea 
@@ -137,7 +163,6 @@ export default function ObjectFormModal({ isOpen, onClose, onSubmit, mode, data,
                 value={formData.phone}
                 onChange={(e) => setFormData({...formData, phone: e.target.value})}
                 className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none"
-                placeholder="0812..."
               />
             </div>
 
@@ -155,18 +180,24 @@ export default function ObjectFormModal({ isOpen, onClose, onSubmit, mode, data,
             </div>
           </div>
 
-          <div className="space-y-1">
-            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">URL Gambar Utama</label>
-            <input 
-              type="url"
-              value={formData.image_url}
-              onChange={(e) => setFormData({...formData, image_url: e.target.value})}
-              className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none"
-              placeholder="https://example.com/image.jpg"
-            />
+          {/* 4. Bagian Upload Gambar Baru */}
+          <div className="space-y-3">
+            <label className="text-xs font-bold text-slate-400 uppercase tracking-wider ml-1">Foto Lokasi</label>
+            <div className="flex items-center gap-4">
+              {previewUrl && (
+                <div className="w-24 h-24 rounded-2xl overflow-hidden border border-slate-200 flex-shrink-0">
+                  <img src={previewUrl} alt="Preview" className="w-full h-full object-cover" />
+                </div>
+              )}
+              <input 
+                type="file"
+                accept="image/*"
+                onChange={handleFileChange}
+                className="w-full px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none bg-white text-sm file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
+              />
+            </div>
           </div>
 
-          {/* Footer Actions */}
           <div className="pt-4 flex gap-3">
             <button 
               type="button" onClick={onClose}

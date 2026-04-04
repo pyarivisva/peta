@@ -74,7 +74,18 @@ export default function MapPage({ isAdmin = false }) {
   // 3. Handler Admin (Create, Update, Delete)
   const handleMapClick = (lat, lng) => {
     if (!isAdmin) return;
-    setFormModal({ isOpen: true, mode: 'create', data: { latitude: lat, longitude: lng } });
+    setFormModal({ 
+    isOpen: true, 
+    mode: 'create', 
+    data: { 
+      latitude: lat, 
+      longitude: lng,
+      name: '',
+      type_id: '',
+      address: '',
+      description: ''
+    } 
+  });
   };
 
   const handleEditRequest = (location) => {
@@ -89,27 +100,79 @@ export default function MapPage({ isAdmin = false }) {
       message: 'Data ini akan dihapus permanen dari server.',
       onConfirm: async () => {
         try {
+          setIsLoading(true);
           await api.delete(`/objects/${id}`);
           fetchData();
-          setFeedback({ isOpen: false });
-        } catch (err) { console.error(err); }
+          setFeedback({
+          isOpen: true,
+          title: 'Terhapus',
+          message: 'Lokasi telah berhasil dihapus.',
+          isConfirm: false,
+          onConfirm: null
+          });
+          // setFeedback({ isOpen: false });
+        } catch (err) {
+          console.error(err);
+          setFeedback({
+          isOpen: true,
+          isConfirm: false,
+          title: 'Gagal',
+          message: 'Gagal menghapus data dari server.',
+        });
+      } finally {
+        setIsLoading(false);
+      }
       }
     });
   };
 
   const handleFormSubmit = async (formData) => {
+    setFormModal({ ...formModal, isOpen: false });
     try {
       setIsLoading(true);
+      const payload = {
+      name: formData.name,
+      description: formData.description || '',
+      address: formData.address || '',
+      latitude: parseFloat(formData.latitude),       
+      longitude: parseFloat(formData.longitude),   
+      type_id: parseInt(formData.type_id),          
+      tags: []                                      
+    };
+
       if (formModal.mode === 'create') {
-        await api.post('/objects', formData);
+      await api.post('/objects', payload);
+      setFeedback({
+        isOpen: true,
+        title: 'Berhasil!',
+        message: 'Lokasi baru telah berhasil ditambahkan ke peta.',
+        isConfirm: false
+      });
+
       } else {
-        await api.put(`/objects/${formModal.data.id}`, formData);
+      await api.put(`/objects/${formModal.data.id}`, payload);
+      setFeedback({
+        isOpen: true,
+        title: 'Update Berhasil',
+        message: 'Data lokasi telah diperbarui.',
+        isConfirm: false
+      });
       }
+
       fetchData();
       setFormModal({ isOpen: false, mode: 'create', data: null });
-    } catch (err) { console.error(err); }
-    finally { setIsLoading(false); }
-  };
+    } catch (err) {
+    console.error(err);
+    setFeedback({
+      isOpen: true,
+      title: 'Gagal',
+      message: err.response?.data?.message || 'Terjadi kesalahan pada server.',
+      isConfirm: false
+    });
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   // Filter & Search Logic
   const handleSearch = (query) => {
@@ -198,7 +261,6 @@ export default function MapPage({ isAdmin = false }) {
           onBack={() => setIsPanelOpen(false)} 
           onSave={() => toggleSave(selectedLocation.id)}
           isSaved={savedIds.includes(selectedLocation?.id)}
-          // Tombol CRUD di dalam detail
           isAdmin={isAdmin}
           onEdit={() => handleEditRequest(selectedLocation)}
           onDelete={() => handleDeleteRequest(selectedLocation.id)}
@@ -211,7 +273,7 @@ export default function MapPage({ isAdmin = false }) {
           categories={['Semua', ...new Set(markers.map(m => m.type_name))]}
           onSelectCategory={handleSelectCategory} isRailExpanded={isRailExpanded}
           onLoginClick={() => navigate('/login')}
-          isAdmin={isAdmin} // Sembunyikan tombol login jika sudah admin
+          isAdmin={isAdmin}
         />
 
         <InteractiveMap 
@@ -219,7 +281,7 @@ export default function MapPage({ isAdmin = false }) {
           isAdmin={isAdmin} 
           setMapRef={(map) => mapRef.current = map} 
           onDetailClick={handleSelectLocation}
-          onMapClick={handleMapClick} // Admin bisa klik untuk tambah
+          onMapClick={handleMapClick}
           theme={activeTheme}
           setActiveTheme={setActiveTheme}
         />
