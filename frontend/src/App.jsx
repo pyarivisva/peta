@@ -3,7 +3,6 @@ import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext'; // Import Provider Anda
 import MapPage from './pages/MapPage';
 import AuthPage from './pages/AuthPage';
-import Dashboard from './pages/Dashboard';
 import ProtectedRoute from './components/ProtectedRoute';
 
 function App() {
@@ -19,7 +18,7 @@ function App() {
               path="/admin" 
               element={
                 <ProtectedRoute>
-                  <Dashboard />
+                  <MapPage isAdmin={true} />
                 </ProtectedRoute>
               } 
             />

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import api from '../api/axiosConfig';
-import InteractiveMap from '../components/InteractiveMap';
+import InteractiveMap from '../components/admin/InteractiveMap';
 import CoordinateTable from '../components/CoordinateTable';
 import AddMarkerModal from '../components/AddMarkerModal';
 import FeedbackModal from '../components/FeedbackModal';

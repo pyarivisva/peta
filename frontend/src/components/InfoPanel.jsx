@@ -1,4 +1,3 @@
-// src/components/InfoPanel.jsx
 export default function InfoPanel({ location, onBack, isOpen }) {
   if (!location) return null;
 

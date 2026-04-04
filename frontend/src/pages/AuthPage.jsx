@@ -2,8 +2,8 @@ import { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig';
 import { AuthContext } from '../context/AuthContext';
-import FeedbackModal from '../components/FeedbackModal';
-import Loading from '../components/Loading';
+import FeedbackModal from '../components/common/FeedbackModal';
+import Loading from '../components/common/Loading';
 
 export default function AuthPage() {
   const [isLoginView, setIsLoginView] = useState(true);

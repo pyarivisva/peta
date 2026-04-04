@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import api from '../api/axiosConfig';
-import Loading from './Loading';
+import Loading from './common/Loading';
 
 export default function AddMarkerModal({ isOpen, onClose, onSuccess, coords }) {
   const [name, setName] = useState('');

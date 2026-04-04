@@ -6,10 +6,11 @@ export default function NavRail({
   onSavedClick, 
   onHistoryClick,
   onSettingsClick,
+  isAdmin,
+  onManagementClick 
 }) {
   return (
     <div style={{
-      // Lebar berubah dinamis
       width: isExpanded ? '260px' : '64px',
       height: '100vh',
       backgroundColor: 'white',
@@ -32,6 +33,15 @@ export default function NavRail({
       
       {/* Menu Items */}
       <div style={{ display: 'flex', flexDirection: 'column', gap: '10px', padding: '10px 9px' }}>
+        
+        {/* TOMBOL MANAJEMEN DATA (HANYA UNTUK ADMIN) */}
+        {isAdmin && (
+          <button onClick={onManagementClick} style={isExpanded ? expandedButtonStyle : iconButtonStyle}>
+            <span>🛠️</span>
+            {isExpanded && <span style={{ marginLeft: '15px' }}>Manajemen Data</span>}
+          </button>
+        )}
+
         <button onClick={onSavedClick} style={isExpanded ? expandedButtonStyle : iconButtonStyle}>
           <span>🔖</span>
           {isExpanded && <span style={{ marginLeft: '15px' }}>Lokasi Disimpan</span>}
@@ -47,17 +57,8 @@ export default function NavRail({
       
       {/* Bottom Item */}
       <div style={{ padding: '10px 9px', position: 'relative' }}>
-        {/* <div style={{ position: 'absolute', bottom: '60px', left: isExpanded ? '260px' : '64px' }}>
-          <SettingsPanel 
-            isOpen={isSettingsOpen} 
-            onClose={() => setIsSettingsOpen(false)} 
-            activeTheme={activeTheme}
-            setActiveTheme={setActiveTheme}
-          />
-        </div> */}
-
         <button 
-          onClick={onSettingsClick} // Ini akan memicu setIsSettingsModalOpen(true) di MapPage
+          onClick={onSettingsClick} 
           style={isExpanded ? expandedButtonStyle : iconButtonStyle}
         >
           <span>⚙️</span>

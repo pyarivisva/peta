@@ -2,8 +2,8 @@ import { useContext, useEffect } from 'react'; // Tambahkan useEffect
 import { MapContainer, TileLayer, Marker, Popup, useMapEvents, ZoomControl } from 'react-leaflet';
 import L from 'leaflet';
 import 'leaflet/dist/leaflet.css';
-import { DEFAULT_CENTER } from '../constants/mapConfig';
-import { ThemeContext } from '../context/ThemeContext';
+import { DEFAULT_CENTER } from '../../constants/mapConfig';
+import { ThemeContext } from '../../context/ThemeContext';
 
 const MapEvents = ({ onMapClick, isAdmin }) => {
   useMapEvents({
