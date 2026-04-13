@@ -32,7 +32,7 @@ const pointController = {
 
   // Tambah titik baru (Admin Only)
   createPoint: async (req, res) => {
-    // const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+    console.log("BODY DITERIMA:", req.body);
     // Validasi Input
     const { error } = PointsValidator.validatePointPayload(req.body);
     if (error) {
@@ -64,7 +64,7 @@ const pointController = {
     const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
     const updatedPoint = await PointsService.updatePoint(id, {
         ...req.body,
-        ...(imageUrl && { image_url: imageUrl })
+       image_url: imageUrl
       });
     if (!updatedPoint) {
         return res.status(404).json({ message: 'Data tidak ditemukan' });

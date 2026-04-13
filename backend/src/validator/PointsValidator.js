@@ -9,7 +9,9 @@ const PointsValidator = {
       latitude: Joi.number().required(),
       longitude: Joi.number().required(),
       type_id: Joi.number().integer().required(),
-      // tags: Joi.array().items(Joi.string()),
+      phone: Joi.string().allow(''),
+      status: Joi.string().allow(''),
+      image_url: Joi.string().allow(null, ''),
       tags: Joi.array().items(Joi.string()).default([])
     });
 

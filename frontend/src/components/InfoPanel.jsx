@@ -1,11 +1,27 @@
+const BASE_URL = 'http://localhost:3000';
+
+const FALLBACK_IMAGE = 'https://placehold.co/420x250?text=Gambar+Tidak+Tersedia';
+
 export default function InfoPanel({ location, onBack, isOpen }) {
   if (!location) return null;
+
+  const getImageUrl = (url) => {
+    if (!url) return FALLBACK_IMAGE;
+    
+    // Jika data dari DB diawali /uploads, gabungkan dengan BASE_URL
+    if (url.startsWith('/uploads')) {
+      return `${BASE_URL}${url}`;
+    }
+    
+    // Jika sudah berupa URL lengkap (http...), gunakan langsung
+    return url;
+  };
 
   return (
     <div style={{
       position: 'absolute',
       top: 0,
-      left: 0, // Akan diatur oleh parent (MapPage) agar di sebelah Rail
+      left: 0, 
       width: isOpen ? '400px' : '0px',
       height: '100vh',
       backgroundColor: 'white',
@@ -25,8 +41,12 @@ export default function InfoPanel({ location, onBack, isOpen }) {
         </button>
         
         <img 
-          src={location.image_url || 'https://via.placeholder.com/420x250?text=No+Image'} 
+          src={getImageUrl(location.image_url)} 
+          alt={location.name}
           style={{ width: '100%', height: '240px', objectFit: 'cover' }} 
+          onError={(e) => {
+            e.target.src = 'https://via.placeholder.com/420x250?text=Image+Not+Found';
+          }}
         />
         
         <div style={{ padding: '24px' }}>

@@ -141,7 +141,7 @@ export default function MapPage({ isAdmin = false }) {
     };
 
       if (formModal.mode === 'create') {
-      await api.post('/objects', payload);
+      await api.post('/objects', formData);
       setFeedback({
         isOpen: true,
         title: 'Berhasil!',
@@ -150,7 +150,7 @@ export default function MapPage({ isAdmin = false }) {
       });
 
       } else {
-      await api.put(`/objects/${formModal.data.id}`, payload);
+      await api.put(`/objects/${formModal.data.id}`, formData);
       setFeedback({
         isOpen: true,
         title: 'Update Berhasil',
