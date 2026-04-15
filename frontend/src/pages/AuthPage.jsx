@@ -44,7 +44,6 @@ export default function AuthPage() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-[#f8fafc] relative overflow-hidden px-4">
-      {/* Dekorasi Background - Bulatan Abstrak */}
       <div className="absolute top-[-10%] left-[-5%] w-100 h-100 bg-blue-100 rounded-full blur-[80px] opacity-60"></div>
       <div className="absolute bottom-[-10%] right-[-5%] w-100 h-100 bg-indigo-100 rounded-full blur-[80px] opacity-60"></div>
 

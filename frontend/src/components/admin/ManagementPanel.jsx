@@ -13,7 +13,7 @@ export default function ManagementPanel({ isOpen, onClose, markers, onEdit, onDe
   return (
     <div style={{ ...panelStyle, ...style }}>
       <div style={headerStyle}>
-        <h3 style={{ margin: 0 }}>Manajemen Data 🛠️</h3>
+        <h3 style={{ margin: 0 }}>Manajemen Data</h3>
         <button onClick={onClose} style={closeButtonStyle}>✕</button>
       </div>
 

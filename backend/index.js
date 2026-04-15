@@ -5,6 +5,7 @@ const path = require('path');
 
 const authRoutes = require('./src/api/routes/auth');
 const pointRoutes = require('./src/api/routes/points');
+const userRoutes = require('./src/api/routes/user');
 
 const app = express();
 const port = process.env.PORT || 3000;
@@ -19,6 +20,7 @@ app.use((req, res, next) => {
 
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 app.use('/api/auth', authRoutes);
+app.use('/api/user', userRoutes);
 app.use('/api', pointRoutes);
 
 app.use((req, res) => {

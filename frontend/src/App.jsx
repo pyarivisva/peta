@@ -1,6 +1,6 @@
 import { Navigate, BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { AuthProvider } from './context/AuthContext';
-import { ThemeProvider } from './context/ThemeContext'; // Import Provider Anda
+import { ThemeProvider } from './context/ThemeContext';
 import MapPage from './pages/MapPage';
 import AuthPage from './pages/AuthPage';
 import ProtectedRoute from './components/ProtectedRoute';
@@ -8,7 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 function App() {
   return (
     <AuthProvider>
-      <ThemeProvider> {/* Bungkus di sini agar MapPage bisa akses theme */}
+      <ThemeProvider>
         <Router>
           <Routes>
             <Route path="/" element={<MapPage />} />

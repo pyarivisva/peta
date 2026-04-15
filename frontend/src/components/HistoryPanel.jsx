@@ -11,7 +11,7 @@ export default function HistoryPanel({ isOpen, onClose, historyIds, allMarkers, 
   return (
     <div style={{ ...panelBaseStyle, ...style }}>
        <div style={headerStyle}>
-         <h3 style={{ margin: 0, fontSize: '18px' }}>Terakhir Dilihat 🕒</h3>
+         <h3 style={{ margin: 0, fontSize: '18px' }}>Terakhir Dilihat</h3>
          <button onClick={onClose} style={closeButtonStyle}>✕</button>
        </div>
        <div style={{ padding: '10px', overflowY: 'auto', flex: 1 }}>
@@ -39,8 +39,6 @@ export default function HistoryPanel({ isOpen, onClose, historyIds, allMarkers, 
     </div>
   );
 }
-
-// --- DEFINISI STYLE ---
 
 const panelBaseStyle = {
   position: 'absolute',

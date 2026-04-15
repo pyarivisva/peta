@@ -1,24 +1,25 @@
 import { useState, useEffect, useCallback, useContext, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import api from '../api/axiosConfig'; 
-import InteractiveMap from '../components/common/InteractiveMap'; // Path disesuaikan
+import InteractiveMap from '../components/common/InteractiveMap';
 import InfoPanel from '../components/InfoPanel'; 
 import NavRail from '../components/NavRail'; 
 import Navbar from '../components/Navbar';
 import SavedPanel from '../components/SavedPanel';
 import HistoryPanel from '../components/HistoryPanel';
-import ManagementPanel from '../components/admin/ManagementPanel'; // Komponen baru
-import ObjectFormModal from '../components/admin/ObjectFormModal'; // Komponen baru
+import ManagementPanel from '../components/admin/ManagementPanel';
+import ObjectFormModal from '../components/admin/ObjectFormModal';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import SettingsPanel from '../components/SettingsPanel';
-import FeedbackModal from '../components/common/FeedbackModal'; // Reuse
-import Loading from '../components/common/Loading'; // Reuse
+import FeedbackModal from '../components/common/FeedbackModal';
+import Loading from '../components/common/Loading';
 import { ThemeContext } from '../context/ThemeContext';
 
 export default function MapPage({ isAdmin = false }) {
   const [markers, setMarkers] = useState([]);
   const [filteredMarkers, setFilteredMarkers] = useState([]);
-  const [types, setTypes] = useState([]); // State untuk kategori dari DB
+  const [types, setTypes] = useState([]); 
+  const [activeCategory, setActiveCategory] = useState('Semua'); 
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   
@@ -28,31 +29,56 @@ export default function MapPage({ isAdmin = false }) {
   const [isRailExpanded, setIsRailExpanded] = useState(false); 
   const [activeSidePanel, setActiveSidePanel] = useState(null);
 
+  // State Ruler Mode
+  const [isRulerMode, setIsRulerMode] = useState(false);
+  const [rulerPoints, setRulerPoints] = useState([]);
+  const [rulerDistance, setRulerDistance] = useState(null);
+
   // State Admin CRUD
   const [formModal, setFormModal] = useState({ isOpen: false, mode: 'create', data: null });
   const [feedback, setFeedback] = useState({ isOpen: false, isConfirm: false, title: '', message: '', onConfirm: null });
 
-  const [savedIds, setSavedIds] = useLocalStorage('bali_gis_saved', []);
-  const [historyIds, setHistoryIds] = useLocalStorage('bali_gis_history', []);   
+  const [localSavedIds, setLocalSavedIds] = useLocalStorage('bali_gis_saved', []);
+  const [localHistoryIds, setLocalHistoryIds] = useLocalStorage('bali_gis_history', []);   
+  
+  const [dbSavedIds, setDbSavedIds] = useState([]);
+  const [dbHistoryIds, setDbHistoryIds] = useState([]);
+
+  const savedIds = isAdmin ? dbSavedIds : localSavedIds;
+  const historyIds = isAdmin ? dbHistoryIds : localHistoryIds;
   
   const mapRef = useRef(null);
   const navigate = useNavigate();
   const { activeTheme, setActiveTheme } = useContext(ThemeContext);
 
-  // 1. Load Data (Admin ambil data private, Public ambil data public)
   const fetchData = useCallback(async () => {
     try {
       setIsLoading(true);
       const endpoint = isAdmin ? '/objects' : '/public/objects';
-      const [resMarkers, resTypes] = await Promise.all([
+      const requests = [
         api.get(endpoint),
         api.get('/types')
-      ]);
-      setMarkers(resMarkers.data);
-      setFilteredMarkers(resMarkers.data);
-      setTypes(resTypes.data);
+      ];
+
+      if (isAdmin) {
+        requests.push(api.get('/user/saved'));
+        requests.push(api.get('/user/history'));
+      }
+
+      const results = await Promise.all(requests);
+      
+      setMarkers(results[0].data);
+      setFilteredMarkers(results[0].data);
+      setTypes(results[1].data);
+
+      if (isAdmin) {
+        setDbSavedIds(results[2].data);
+        setDbHistoryIds(results[3].data);
+      }
     } catch (err) { 
-      console.error(err); 
+      console.error('Fetch Data Error:', err); 
+      const errMsg = err.response?.data?.message || err.message || "Unknown Start Error";
+      setFeedback({ isOpen: true, title: 'Network Initialization Error', message: errMsg, isConfirm: false });
     } finally {
       setIsLoading(false);
     }
@@ -60,18 +86,48 @@ export default function MapPage({ isAdmin = false }) {
 
   useEffect(() => { fetchData(); }, [fetchData]);
 
-  // 2. Handler Seleksi & History
+  // Haversine Distance Formula
+  const calculateDistance = (lat1, lon1, lat2, lon2) => {
+    const R = 6371; // km
+    const dLat = (lat2 - lat1) * Math.PI / 180;
+    const dLon = (lon2 - lon1) * Math.PI / 180;
+    const a = Math.sin(dLat/2) * Math.sin(dLat/2) +
+      Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+      Math.sin(dLon/2) * Math.sin(dLon/2);
+    const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    return R * c;
+  };
+
+  const handleMapRulerClick = (lat, lng) => {
+    setRulerPoints(prev => {
+      let newPts = [...prev, { lat, lng }];
+      if (newPts.length > 2) {
+        newPts = [{ lat, lng }];
+        setRulerDistance(null);
+      } else if (newPts.length === 2) {
+        const dist = calculateDistance(newPts[0].lat, newPts[0].lng, newPts[1].lat, newPts[1].lng);
+        setRulerDistance(dist.toFixed(2));
+      }
+      return newPts;
+    });
+  };
+
+  const toggleRulerMode = () => {
+    setIsRulerMode(!isRulerMode);
+    setRulerPoints([]);
+    setRulerDistance(null);
+  };
+
   const handleSelectLocation = (location) => {
     setSelectedLocation(location);
     setIsPanelOpen(true);
     setActiveSidePanel(null);
-    if (!isAdmin) addToHistory(location.id);
+    addToHistory(location.id);
     if (mapRef.current && location.latitude && location.longitude) {
         mapRef.current.flyTo([location.latitude, location.longitude], 15);
     }
   };
 
-  // 3. Handler Admin (Create, Update, Delete)
   const handleMapClick = (lat, lng) => {
     if (!isAdmin) return;
     setFormModal({ 
@@ -110,7 +166,6 @@ export default function MapPage({ isAdmin = false }) {
           isConfirm: false,
           onConfirm: null
           });
-          // setFeedback({ isOpen: false });
         } catch (err) {
           console.error(err);
           setFeedback({
@@ -178,22 +233,43 @@ export default function MapPage({ isAdmin = false }) {
   const handleSearch = (query) => {
     const filtered = markers.filter(m => m.name.toLowerCase().includes(query.toLowerCase()));
     setFilteredMarkers(filtered);
+    setActiveCategory('Semua');
   };
 
   const handleSelectCategory = (category) => {
     const filtered = category === 'Semua' ? markers : markers.filter(m => m.type_name === category);
     setFilteredMarkers(filtered);
+    setActiveCategory(category);
   };
 
-  const addToHistory = (id) => {
-    setHistoryIds((prev) => {
-      const filtered = prev.filter(item => item !== id);
-      return [id, ...filtered].slice(0, 10);
-    });
+  const addToHistory = async (id) => {
+    if (isAdmin) {
+      try {
+        await api.post(`/user/history/${id}`);
+        setDbHistoryIds(prev => [id, ...prev.filter(item => item !== id)].slice(0, 10));
+      } catch (err) { 
+        console.error(err);
+        const errMsg = err.response?.data?.message || err.message || "Unknown Error";
+        setFeedback({ isOpen: true, title: 'History Sync Error', message: errMsg, isConfirm: false });
+      }
+    } else {
+      setLocalHistoryIds(prev => [id, ...prev.filter(item => item !== id)].slice(0, 10));
+    }
   };
 
-  const toggleSave = (id) => {
-    setSavedIds((prev) => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
+  const toggleSave = async (id) => {
+    if (isAdmin) {
+      try {
+        await api.post(`/user/saved/${id}`);
+        setDbSavedIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
+      } catch (err) { 
+        console.error(err); 
+        const errMsg = err.response?.data?.message || err.message || "Unknown Error";
+        setFeedback({ isOpen: true, title: 'Save Sync Error', message: errMsg, isConfirm: false });
+      }
+    } else {
+      setLocalSavedIds(prev => prev.includes(id) ? prev.filter(item => item !== id) : [...prev, id]);
+    }
   };
 
   useEffect(() => {
@@ -242,9 +318,10 @@ export default function MapPage({ isAdmin = false }) {
           onSettingsClick={() => setIsSettingsPanelOpen(true)}
           onSavedClick={() => { setActiveSidePanel('saved'); setIsPanelOpen(false); }}
           onHistoryClick={() => { setActiveSidePanel('history'); setIsPanelOpen(false); }}
-          // Fitur khusus admin di Rail
           isAdmin={isAdmin}
           onManagementClick={() => { setActiveSidePanel('management'); setIsPanelOpen(false); }}
+          onRulerClick={toggleRulerMode}
+          isRulerActive={isRulerMode}
         />
       </div>
 
@@ -267,10 +344,33 @@ export default function MapPage({ isAdmin = false }) {
         />
       </div>
 
-      <div style={{ width: '100%', height: '100%', position: 'relative', zIndex: 1 }}>
+      {isRulerMode && (
+        <div style={{
+          position: 'absolute', top: '100px', right: '30px', zIndex: 1200,
+          backgroundColor: 'rgba(255,255,255,0.9)', backdropFilter: 'blur(8px)',
+          padding: '15px 20px', borderRadius: '12px', boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
+          border: '1px solid #1890ff', textAlign: 'center', minWidth: '200px'
+        }}>
+          <h4 style={{ margin: '0 0 10px 0', color: '#1890ff' }}>Mode Ukur Jarak</h4>
+          {rulerPoints.length === 0 && <p style={{ margin: 0, fontSize: '13px', color: '#666' }}>Klik titik pertama di peta</p>}
+          {rulerPoints.length === 1 && <p style={{ margin: 0, fontSize: '13px', color: '#666' }}>Klik titik kedua di peta</p>}
+          {rulerDistance && (
+            <div>
+              <p style={{ margin: 0, fontSize: '24px', fontWeight: 'bold', color: '#333' }}>{rulerDistance} <span style={{fontSize: '14px'}}>km</span></p>
+              <button 
+                onClick={() => { setRulerPoints([]); setRulerDistance(null); }}
+                style={{ marginTop: '10px', background: '#f5f5f5', border: 'none', padding: '5px 15px', borderRadius: '20px', cursor: 'pointer', fontSize: '12px' }}
+              >Reset Titik</button>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div style={{ width: '100%', height: '100%', position: 'relative', zIndex: 0 }}>
         <Navbar 
           onSearch={handleSearch} results={filteredMarkers} onSelectResult={handleSelectLocation}
           categories={['Semua', ...new Set(markers.map(m => m.type_name))]}
+          activeCategory={activeCategory}
           onSelectCategory={handleSelectCategory} isRailExpanded={isRailExpanded}
           onLoginClick={() => navigate('/login')}
           isAdmin={isAdmin}
@@ -284,6 +384,9 @@ export default function MapPage({ isAdmin = false }) {
           onMapClick={handleMapClick}
           theme={activeTheme}
           setActiveTheme={setActiveTheme}
+          isRulerMode={isRulerMode}
+          onRulerClick={handleMapRulerClick}
+          rulerPoints={rulerPoints}
         />
       </div>
     </div>

@@ -12,6 +12,7 @@ const PointsValidator = {
       phone: Joi.string().allow(''),
       status: Joi.string().allow(''),
       image_url: Joi.string().allow(null, ''),
+      kept_images: Joi.any(),
       tags: Joi.array().items(Joi.string()).default([])
     });
 

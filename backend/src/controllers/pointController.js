@@ -3,15 +3,12 @@ const TypesService = require('../services/TypesService');
 const PointsValidator = require('../validator/PointsValidator');
 
 const pointController = {
-  // Ambil semua titik (Public)
   getPoints: async (req, res) => {
     try {
       let points;
-      // Jika ada req.user (artinya lewat middleware verifyToken), ambil data milik user tsb
       if (req.user) {
         points = await PointsService.getPointsByUser(req.user.id);
       } else {
-        // Jika tidak ada user (Public), ambil semua
         points = await PointsService.getAllPoints();
       }
       res.json(points);
@@ -20,7 +17,6 @@ const pointController = {
     }
   },
 
-  // Ambil semua tipe
   getTypes: async (req, res) => {
     try {
       const types = await TypesService.getAllTypes();
@@ -30,20 +26,18 @@ const pointController = {
     }
   },
 
-  // Tambah titik baru (Admin Only)
   createPoint: async (req, res) => {
     console.log("BODY DITERIMA:", req.body);
-    // Validasi Input
     const { error } = PointsValidator.validatePointPayload(req.body);
     if (error) {
       return res.status(400).json({ message: error.details[0].message });
     }
 
     try {
-      const imageUrl = req.file ? `/uploads/${req.file.filename}` : null;
+      const imageUrls = req.files && req.files.length > 0 ? req.files.map(file => `/uploads/${file.filename}`) : [];
       const newPoint = await PointsService.addPoint({
         ...req.body,
-        image_url: imageUrl,
+        image_urls: imageUrls,
         created_by: req.user.id 
       });
       res.status(201).json(newPoint);
@@ -61,11 +55,20 @@ const pointController = {
   }
 
   try {
-    const imageUrl = req.file ? `/uploads/${req.file.filename}` : undefined;
+    let keptImages = [];
+    if (req.body.kept_images) {
+      try {
+        keptImages = JSON.parse(req.body.kept_images);
+      } catch (e) {
+      }
+    }
+    const uploadedUrls = req.files && req.files.length > 0 ? req.files.map(file => `/uploads/${file.filename}`) : [];
+    const finalImageUrls = [...keptImages, ...uploadedUrls];
+
     const updatedPoint = await PointsService.updatePoint(id, {
         ...req.body,
-       image_url: imageUrl
-      });
+       image_urls: finalImageUrls
+    });
     if (!updatedPoint) {
         return res.status(404).json({ message: 'Data tidak ditemukan' });
       }

@@ -11,43 +11,39 @@ export default function SettingsPanel({ isOpen, onClose, activeTheme, setActiveT
 
   return (
     <>
-      {/* 1. OVERLAY GELAP (Di belakang modal) */}
       <div 
-        onClick={onClose} // Klik di luar modal untuk menutup
+        onClick={onClose}
         style={{
           position: 'fixed',
           top: 0,
           left: 0,
           width: '100vw',
           height: '100vh',
-          backgroundColor: 'rgba(0,0,0,0.5)', // Gelap transparan
-          zIndex: 2000, // Sangat tinggi, di atas segalanya
+          backgroundColor: 'rgba(0,0,0,0.5)',
+          zIndex: 2000,
           animation: 'fadeIn 0.2s ease-out'
         }}
       />
 
-      {/* 2. KONTEN MODAL (Di tengah layar) */}
       <div style={{
         position: 'fixed',
         top: '50%',
         left: '50%',
-        transform: 'translate(-50%, -50%)', // Kunci posisi tengah sempurna
+        transform: 'translate(-50%, -50%)',
         width: '400px',
         backgroundColor: 'white',
         borderRadius: '16px',
         boxShadow: '0 12px 40px rgba(0,0,0,0.3)',
-        zIndex: 2001, // Di atas overlay
+        zIndex: 2001,
         padding: '30px',
         animation: 'zoomIn 0.3s ease-out',
         border: '1px solid #eee'
       }}>
         
-        {/* Header Modal + Icon Exit */}
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '25px' }}>
           <h2 style={{ margin: 0, fontSize: '20px', fontWeight: '800', color: '#333' }}>
             Pengaturan Tampilan
           </h2>
-          {/* Tombol X (Exit) Standar */}
           <button 
             onClick={onClose}
             style={{ 
@@ -81,9 +77,9 @@ export default function SettingsPanel({ isOpen, onClose, activeTheme, setActiveT
             <div 
               key={t.id}
               onClick={() => {
-                setActiveTheme(t.id); // Panggil fungsi pengubah tema
+                setActiveTheme(t.id);
                 // console.log("Mencoba mengganti tema ke:", t.id);
-                onClose(); // Opsional: Tutup modal setelah pilih
+                onClose();
               }}
               style={{
                 display: 'flex',

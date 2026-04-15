@@ -9,7 +9,6 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     if (token) {
-      // Opsi: Bisa panggil endpoint /me untuk validasi token jika perlu
       localStorage.setItem('token', token);
     } else {
       localStorage.removeItem('token');

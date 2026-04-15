@@ -9,7 +9,7 @@ export default function SavedPanel({ isOpen, onClose, savedIds, allMarkers, onSe
   return (
     <div style={{ ...panelBaseStyle, ...style }}>
        <div style={headerStyle}>
-         <h3 style={{ margin: 0, fontSize: '18px' }}>Lokasi Disimpan 🔖</h3>
+         <h3 style={{ margin: 0, fontSize: '18px' }}>Lokasi Disimpan</h3>
          <button onClick={onClose} style={closeButtonStyle}>✕</button>
        </div>
        <div style={{ padding: '10px', overflowY: 'auto', flex: 1 }}>
@@ -38,15 +38,14 @@ export default function SavedPanel({ isOpen, onClose, savedIds, allMarkers, onSe
   );
 }
 
-// --- DEFINISI STYLE (Agar tidak error) ---
-
 const panelBaseStyle = {
   position: 'absolute',
   top: '80px',
   zIndex: 1040,
   width: '390px',
   height: 'calc(100vh - 90px)',
-  backgroundColor: 'white',
+  backgroundColor: 'rgba(255, 255, 255, 0.95)',
+  backdropFilter: 'blur(16px)',
   borderRadius: '12px 12px 0 0',
   boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
   transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
