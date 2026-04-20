@@ -2,6 +2,7 @@ import { Navigate, BrowserRouter as Router, Routes, Route } from 'react-router-d
 import { AuthProvider } from './context/AuthContext';
 import { ThemeProvider } from './context/ThemeContext';
 import MapPage from './pages/MapPage';
+import AdminDataPage from './pages/AdminDataPage';
 import AuthPage from './pages/AuthPage';
 import ProtectedRoute from './components/ProtectedRoute';
 
@@ -19,6 +20,15 @@ function App() {
               element={
                 <ProtectedRoute>
                   <MapPage isAdmin={true} />
+                </ProtectedRoute>
+              } 
+            />
+
+            <Route 
+              path="/admin/data" 
+              element={
+                <ProtectedRoute>
+                  <AdminDataPage />
                 </ProtectedRoute>
               } 
             />

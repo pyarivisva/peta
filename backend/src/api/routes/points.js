@@ -20,12 +20,21 @@ const upload = multer({ storage: storage });
 
 router.get('/public/objects', pointController.getPoints);
 router.get('/types', pointController.getTypes);
+router.get('/clusters', pointController.getClusters);
+router.get('/facilities', pointController.getFacilities);
+router.get('/healthcare-master-types', pointController.getHealthcareTypes);
 
 
 // Rute Admin (Perlu Login)
 router.get('/objects', verifyToken, pointController.getPoints);
-router.post('/objects', verifyToken, upload.array('images', 5), pointController.createPoint);
-router.put('/objects/:id', verifyToken, upload.array('images', 5), pointController.updatePoint);
+
+const multiUpload = upload.fields([
+  { name: 'images', maxCount: 5 },
+  { name: 'menu_image', maxCount: 1 }
+]);
+
+router.post('/objects', verifyToken, multiUpload, pointController.createPoint);
+router.put('/objects/:id', verifyToken, multiUpload, pointController.updatePoint);
 router.delete('/objects/:id', verifyToken, pointController.deletePoint);
 
 module.exports = router;

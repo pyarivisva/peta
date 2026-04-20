@@ -2,3 +2,7 @@ node_modules
 .env
 
 /uploads
+
+check_columns.js
+check_tables.js
+check_types_clusters.js

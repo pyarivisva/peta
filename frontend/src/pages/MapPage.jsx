@@ -7,7 +7,6 @@ import NavRail from '../components/NavRail';
 import Navbar from '../components/Navbar';
 import SavedPanel from '../components/SavedPanel';
 import HistoryPanel from '../components/HistoryPanel';
-import ManagementPanel from '../components/admin/ManagementPanel';
 import ObjectFormModal from '../components/admin/ObjectFormModal';
 import { useLocalStorage } from '../hooks/useLocalStorage';
 import SettingsPanel from '../components/SettingsPanel';
@@ -19,6 +18,7 @@ export default function MapPage({ isAdmin = false }) {
   const [markers, setMarkers] = useState([]);
   const [filteredMarkers, setFilteredMarkers] = useState([]);
   const [types, setTypes] = useState([]); 
+  const [clusters, setClusters] = useState([]);
   const [activeCategory, setActiveCategory] = useState('Semua'); 
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -57,7 +57,8 @@ export default function MapPage({ isAdmin = false }) {
       const endpoint = isAdmin ? '/objects' : '/public/objects';
       const requests = [
         api.get(endpoint),
-        api.get('/types')
+        api.get('/types'),
+        api.get('/clusters')
       ];
 
       if (isAdmin) {
@@ -70,10 +71,14 @@ export default function MapPage({ isAdmin = false }) {
       setMarkers(results[0].data);
       setFilteredMarkers(results[0].data);
       setTypes(results[1].data);
+      setClusters(results[2].data);
+      
+      const savedIdx = isAdmin ? 3 : -1;
+      const historyIdx = isAdmin ? 4 : -1;
 
-      if (isAdmin) {
-        setDbSavedIds(results[2].data);
-        setDbHistoryIds(results[3].data);
+      if (isAdmin && savedIdx !== -1) {
+        setDbSavedIds(results[savedIdx].data);
+        setDbHistoryIds(results[historyIdx].data);
       }
     } catch (err) { 
       console.error('Fetch Data Error:', err); 
@@ -131,17 +136,18 @@ export default function MapPage({ isAdmin = false }) {
   const handleMapClick = (lat, lng) => {
     if (!isAdmin) return;
     setFormModal({ 
-    isOpen: true, 
-    mode: 'create', 
-    data: { 
-      latitude: lat, 
-      longitude: lng,
-      name: '',
-      type_id: '',
-      address: '',
-      description: ''
-    } 
-  });
+      isOpen: true, 
+      mode: 'create', 
+      data: { 
+        latitude: lat, 
+        longitude: lng,
+        name: '',
+        type_id: '',
+        address: '',
+        description: '',
+        details: {}
+      } 
+    });
   };
 
   const handleEditRequest = (location) => {
@@ -160,23 +166,23 @@ export default function MapPage({ isAdmin = false }) {
           await api.delete(`/objects/${id}`);
           fetchData();
           setFeedback({
-          isOpen: true,
-          title: 'Terhapus',
-          message: 'Lokasi telah berhasil dihapus.',
-          isConfirm: false,
-          onConfirm: null
+            isOpen: true,
+            title: 'Terhapus',
+            message: 'Lokasi telah berhasil dihapus.',
+            isConfirm: false,
+            onConfirm: null
           });
         } catch (err) {
           console.error(err);
           setFeedback({
-          isOpen: true,
-          isConfirm: false,
-          title: 'Gagal',
-          message: 'Gagal menghapus data dari server.',
-        });
-      } finally {
-        setIsLoading(false);
-      }
+            isOpen: true,
+            isConfirm: false,
+            title: 'Gagal',
+            message: 'Gagal menghapus data dari server.',
+          });
+        } finally {
+          setIsLoading(false);
+        }
       }
     });
   };
@@ -185,49 +191,38 @@ export default function MapPage({ isAdmin = false }) {
     setFormModal({ ...formModal, isOpen: false });
     try {
       setIsLoading(true);
-      const payload = {
-      name: formData.name,
-      description: formData.description || '',
-      address: formData.address || '',
-      latitude: parseFloat(formData.latitude),       
-      longitude: parseFloat(formData.longitude),   
-      type_id: parseInt(formData.type_id),          
-      tags: []                                      
-    };
-
       if (formModal.mode === 'create') {
-      await api.post('/objects', formData);
-      setFeedback({
-        isOpen: true,
-        title: 'Berhasil!',
-        message: 'Lokasi baru telah berhasil ditambahkan ke peta.',
-        isConfirm: false
-      });
-
+        await api.post('/objects', formData);
+        setFeedback({
+          isOpen: true,
+          title: 'Berhasil!',
+          message: 'Lokasi baru telah berhasil ditambahkan ke peta.',
+          isConfirm: false
+        });
       } else {
-      await api.put(`/objects/${formModal.data.id}`, formData);
-      setFeedback({
-        isOpen: true,
-        title: 'Update Berhasil',
-        message: 'Data lokasi telah diperbarui.',
-        isConfirm: false
-      });
+        await api.put(`/objects/${formModal.data.id}`, formData);
+        setFeedback({
+          isOpen: true,
+          title: 'Update Berhasil',
+          message: 'Data lokasi telah diperbarui.',
+          isConfirm: false
+        });
       }
 
       fetchData();
       setFormModal({ isOpen: false, mode: 'create', data: null });
     } catch (err) {
-    console.error(err);
-    setFeedback({
-      isOpen: true,
-      title: 'Gagal',
-      message: err.response?.data?.message || 'Terjadi kesalahan pada server.',
-      isConfirm: false
-    });
-  } finally {
-    setIsLoading(false);
-  }
-};
+      console.error(err);
+      setFeedback({
+        isOpen: true,
+        title: 'Gagal',
+        message: err.response?.data?.message || 'Terjadi kesalahan pada server.',
+        isConfirm: false
+      });
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   // Filter & Search Logic
   const handleSearch = (query) => {
@@ -237,7 +232,7 @@ export default function MapPage({ isAdmin = false }) {
   };
 
   const handleSelectCategory = (category) => {
-    const filtered = category === 'Semua' ? markers : markers.filter(m => m.type_name === category);
+    const filtered = category === 'Semua' ? markers : markers.filter(m => m.cluster_name === category);
     setFilteredMarkers(filtered);
     setActiveCategory(category);
   };
@@ -290,6 +285,7 @@ export default function MapPage({ isAdmin = false }) {
         <ObjectFormModal 
           {...formModal} 
           types={types} 
+          clusters={clusters}
           onClose={() => setFormModal({ ...formModal, isOpen: false })} 
           onSubmit={handleFormSubmit} 
         />
@@ -299,18 +295,6 @@ export default function MapPage({ isAdmin = false }) {
       <SavedPanel isOpen={activeSidePanel === 'saved'} onClose={() => setActiveSidePanel(null)} savedIds={savedIds} allMarkers={markers} onSelectLocation={handleSelectLocation} style={{ left: leftPos }} />
       <HistoryPanel isOpen={activeSidePanel === 'history'} onClose={() => setActiveSidePanel(null)} historyIds={historyIds} allMarkers={markers} onSelectLocation={handleSelectLocation} style={{ left: leftPos }} />
       
-      {isAdmin && (
-        <ManagementPanel 
-          isOpen={activeSidePanel === 'management'} 
-          onClose={() => setActiveSidePanel(null)} 
-          markers={markers} 
-          onEdit={handleEditRequest} 
-          onDelete={handleDeleteRequest} 
-          onSelect={handleSelectLocation}
-          style={{ left: leftPos }} 
-        />
-      )}
-      
       <div style={{ position: 'absolute', left: 0, top: 0, zIndex: 1100 }}>
         <NavRail 
           isExpanded={isRailExpanded}
@@ -319,7 +303,6 @@ export default function MapPage({ isAdmin = false }) {
           onSavedClick={() => { setActiveSidePanel('saved'); setIsPanelOpen(false); }}
           onHistoryClick={() => { setActiveSidePanel('history'); setIsPanelOpen(false); }}
           isAdmin={isAdmin}
-          onManagementClick={() => { setActiveSidePanel('management'); setIsPanelOpen(false); }}
           onRulerClick={toggleRulerMode}
           isRulerActive={isRulerMode}
         />
@@ -369,7 +352,7 @@ export default function MapPage({ isAdmin = false }) {
       <div style={{ width: '100%', height: '100%', position: 'relative', zIndex: 0 }}>
         <Navbar 
           onSearch={handleSearch} results={filteredMarkers} onSelectResult={handleSelectLocation}
-          categories={['Semua', ...new Set(markers.map(m => m.type_name))]}
+          categories={['Semua', ...clusters.map(c => c.name)]}
           activeCategory={activeCategory}
           onSelectCategory={handleSelectCategory} isRailExpanded={isRailExpanded}
           onLoginClick={() => navigate('/login')}

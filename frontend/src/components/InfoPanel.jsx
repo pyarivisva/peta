@@ -1,5 +1,12 @@
 /* eslint-disable react-hooks/set-state-in-effect */
 import React, { useState, useEffect } from 'react';
+import { 
+  FoodDetailView, 
+  NatureDetailView, 
+  AccommodationDetailView, 
+  HealthcareDetailView, 
+  EducationDetailView 
+} from './clusters/DetailViews';
 
 const BASE_URL = 'http://localhost:3000';
 const FALLBACK_IMAGE = 'https://placehold.co/420x250?text=Gambar+Tidak+Tersedia';
@@ -35,6 +42,30 @@ export default function InfoPanel({ location, onBack, isOpen, onSave, isSaved, i
     setCurrentImageIndex((prev) => (prev - 1 + displayImages.length) % displayImages.length);
   };
 
+  const renderClusterDetails = () => {
+    if (!location.details) return null;
+    
+    const props = { details: location.details };
+    switch (location.cluster_name) {
+      case 'Restoran':
+      case 'Food & Beverage':
+      case 'Food':
+        return <FoodDetailView {...props} />;
+      case 'Alam':
+      case 'Nature & Outdoor':
+      case 'Nature':
+        return <NatureDetailView {...props} />;
+      case 'Accommodation':
+        return <AccommodationDetailView {...props} />;
+      case 'Healthcare':
+        return <HealthcareDetailView {...props} />;
+      case 'Education':
+        return <EducationDetailView {...props} />;
+      default:
+        return null;
+    }
+  };
+
   return (
     <>
       <div style={{
@@ -42,7 +73,7 @@ export default function InfoPanel({ location, onBack, isOpen, onSave, isSaved, i
         top: 0,
         left: 0, 
         width: isOpen ? '400px' : '0px',
-        height: '100vh',
+        height: '100%',
         backgroundColor: 'white',
         zIndex: 1050,
         transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
@@ -51,10 +82,10 @@ export default function InfoPanel({ location, onBack, isOpen, onSave, isSaved, i
         display: 'flex',
         flexDirection: 'column'
       }}>
-        <div style={{ minWidth: '400px', flex: 1, overflowY: 'auto' }}>
+        <div style={{ minWidth: '400px', height: '100%', overflowY: 'auto' }} className="custom-scrollbar">
           
           {/* BATAS IMAGE HERO CAROUSEL */}
-          <div style={{ position: 'relative', width: '100%', height: '260px' }}>
+          <div style={{ position: 'relative', width: '100%', height: '260px', flexShrink: 0 }}>
             <button 
               onClick={onBack} 
               style={{ 
@@ -131,15 +162,21 @@ export default function InfoPanel({ location, onBack, isOpen, onSave, isSaved, i
               )}
             </div>
 
-            <span style={{ backgroundColor: '#e6f7ff', color: '#1890ff', padding: '4px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase' }}>
-              {location.type_name}
-            </span>
-            <h2 style={{ marginTop: '12px', fontSize: '24px', color: '#1a1a1a', fontWeight: '800' }}>{location.name}</h2>
+            <div className="flex items-center gap-2 mb-3">
+              <span style={{ backgroundColor: '#e6f7ff', color: '#1890ff', padding: '4px 12px', borderRadius: '6px', fontSize: '11px', fontWeight: 'bold', textTransform: 'uppercase' }}>
+                {location.type_name}
+              </span>
+              <span className="text-[10px] bg-slate-100 text-slate-500 px-2 py-1 rounded font-bold uppercase tracking-widest">
+                {location.cluster_name || 'General'}
+              </span>
+            </div>
+
+            <h2 style={{ marginTop: '0px', fontSize: '24px', color: '#1a1a1a', fontWeight: '800' }}>{location.name}</h2>
             <p style={{ color: '#555', lineHeight: '1.7', fontSize: '14px', marginBottom: '20px' }}>{location.description}</p>
             
-            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', borderTop: '1px solid #f0f0f0', paddingTop: '20px' }}>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '15px' }}>
               {location.address && (
-                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px' }}>
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '12px', borderTop: '1px solid #f0f0f0', paddingTop: '20px' }}>
                   <span style={{ color: '#1890ff' }}>📍</span>
                   <div style={{ fontSize: '13px', color: '#333', lineHeight: '1.5' }}>{location.address}</div>
                 </div>
@@ -160,6 +197,11 @@ export default function InfoPanel({ location, onBack, isOpen, onSave, isSaved, i
                   </div>
                 </div>
               )}
+
+              {/* DYNAMIC CLUSTER DETAILS */}
+              <div className="mt-2">
+                {renderClusterDetails()}
+              </div>
             </div>
           </div>
         </div>
