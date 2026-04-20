@@ -1,4 +1,5 @@
 import React from 'react';
+import { DEFAULT_CONFIG } from '../../constants/config';
 
 export function FoodFormFields({ details, onChange, onMenuImageChange, menuPreviewUrl }) {
   return (
@@ -46,14 +47,14 @@ export function FoodFormFields({ details, onChange, onMenuImageChange, menuPrevi
             <div className="flex items-center gap-4">
                 <input 
                     type="time"
-                    value={details.open_time || '08:00'}
+                    value={details.open_time || DEFAULT_CONFIG.TIMES.OPEN_DEFAULT}
                     onChange={(e) => onChange('open_time', e.target.value)}
                     className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none font-semibold text-slate-700 bg-white"
                 />
                 <span className="text-slate-300 font-bold">s/d</span>
                 <input 
                     type="time"
-                    value={details.close_time || '22:00'}
+                    value={details.close_time || DEFAULT_CONFIG.TIMES.CLOSE_DEFAULT}
                     onChange={(e) => onChange('close_time', e.target.value)}
                     className="flex-1 px-4 py-3 rounded-xl border border-slate-200 focus:border-blue-500 outline-none font-semibold text-slate-700 bg-white"
                 />
@@ -224,7 +225,7 @@ export function AccommodationFormFields({ details, onChange }) {
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Waktu Check-in</label>
           <input 
             type="time"
-            value={details.check_in_time || '14:00'}
+            value={details.check_in_time || DEFAULT_CONFIG.TIMES.CHECKIN_DEFAULT}
             onChange={(e) => onChange('check_in_time', e.target.value)}
             className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none font-semibold"
           />
@@ -233,7 +234,7 @@ export function AccommodationFormFields({ details, onChange }) {
           <label className="text-[10px] font-black text-slate-400 uppercase tracking-widest ml-1">Waktu Check-out</label>
           <input 
             type="time"
-            value={details.check_out_time || '12:00'}
+            value={details.check_out_time || DEFAULT_CONFIG.TIMES.CHECKOUT_DEFAULT}
             onChange={(e) => onChange('check_out_time', e.target.value)}
             className="w-full px-4 py-3 rounded-xl border border-slate-200 outline-none font-semibold"
           />

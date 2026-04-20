@@ -110,13 +110,14 @@ export default function Navbar({ onSearch, results, onSelectResult, categories =
       </div>
 
       {/* GRUP KANAN: BRANDING & LOGIN/LOGOUT */}
-      <div style={{ 
+      <div> 
+      {/* style={{ 
         display: 'flex', alignItems: 'center', gap: '15px', 
         backgroundColor: '#1890ff', padding: '8px 20px', 
         borderRadius: '30px', boxShadow: '0 4px 12px rgba(0,0,0,0.15)', color: 'white'
-      }}>
-        <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800' }}>Geographic Information</h2>
-        <div style={{ width: '1px', height: '20px', backgroundColor: 'rgba(255,255,255,0.3)' }}></div>
+      }}> */}
+        {/* <h2 style={{ margin: 0, fontSize: '15px', fontWeight: '800' }}>Geographic</h2> */}
+        {/* <div style={{ width: '1px', height: '20px', backgroundColor: 'rgba(255,255,255,0.3)' }}></div> */}
         {isAdmin ? (
           <button 
             onClick={handleLogout}

@@ -7,6 +7,7 @@ import {
   HealthcareFormFields, 
   EducationFormFields 
 } from '../clusters/FormFields';
+import { DEFAULT_CONFIG } from '../../constants/config';
 
 const BASE_URL = 'http://localhost:3000';
 
@@ -90,8 +91,8 @@ export default function ObjectFormModal({ isOpen, onClose, onSubmit, mode, data,
         details: {
           facility_ids: [],
           healthcare_type_ids: [],
-          open_time: '08:00',
-          close_time: '22:00'
+          open_time: DEFAULT_CONFIG.TIMES.OPEN_DEFAULT,
+          close_time: DEFAULT_CONFIG.TIMES.CLOSE_DEFAULT
         }
       });
       setClusterName('');
@@ -235,7 +236,7 @@ export default function ObjectFormModal({ isOpen, onClose, onSubmit, mode, data,
   const getImageUrl = (url) => url && url.startsWith('/uploads') ? `${BASE_URL}${url}` : url;
 
   return (
-    <div className="fixed inset-0 z-[2000] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
+    <div className="fixed inset-0 z-2000 flex items-center justify-center bg-black/50 backdrop-blur-sm p-4">
       <div className="bg-white w-full max-w-4xl rounded-3xl shadow-2xl overflow-hidden flex flex-col max-h-[95vh]">
         
         <div className="p-6 border-b flex justify-between items-center bg-slate-50">
@@ -243,7 +244,6 @@ export default function ObjectFormModal({ isOpen, onClose, onSubmit, mode, data,
             <h2 className="text-xl font-black text-slate-800 uppercase tracking-tight">
               {mode === 'create' ? 'Tambah Lokasi Baru' : 'Perbarui Lokasi'}
             </h2>
-            <p className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mt-0.5">Sistem Informasi Geografis Bali</p>
           </div>
           <button onClick={onClose} className="w-10 h-10 rounded-full bg-slate-100 flex items-center justify-center text-slate-400 hover:text-red-500 hover:bg-red-50 transition-all font-bold">✕</button>
         </div>
@@ -344,9 +344,9 @@ export default function ObjectFormModal({ isOpen, onClose, onSubmit, mode, data,
                 onChange={(e) => setFormData({...formData, status: e.target.value})}
                 className="w-full px-5 py-4 rounded-2xl border border-slate-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-500/10 outline-none bg-white font-semibold text-slate-700 cursor-pointer"
               >
-                <option value="Open">Beroperasi (Open)</option>
-                <option value="Closed">Tutup Sementara (Closed)</option>
-                <option value="Under Renovation">Dalam Renovasi</option>
+                {DEFAULT_CONFIG.STATUS_OPTIONS.map(opt => (
+                    <option key={opt.value} value={opt.value}>{opt.label}</option>
+                ))}
               </select>
             </div>
           </div>
