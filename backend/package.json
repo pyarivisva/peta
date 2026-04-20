@@ -5,6 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "nodemon index.js",
+    "migrate": "node-pg-migrate -m src/migrations",
     "migrate:create": "node-pg-migrate create",
     "migrate:up": "node-pg-migrate up",
     "migrate:down": "node-pg-migrate down",
